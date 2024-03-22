@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VehicleTO implements Serializable {
-    private int parkingNo;
-    private String vehicleNo;
+    private Integer parkingNumber;
+    private String registrationNumber;
     private String contact;
     private String category;
     private String status;
