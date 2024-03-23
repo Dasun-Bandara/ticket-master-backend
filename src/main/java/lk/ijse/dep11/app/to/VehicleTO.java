@@ -5,7 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 @Data
 @AllArgsConstructor
@@ -16,6 +17,7 @@ public class VehicleTO implements Serializable {
     private String contact;
     private String category;
     private String status;
-    private LocalDateTime inTime;
-    private LocalDateTime outTime;
+    private BigDecimal chargePerHour;
+    private Timestamp inTime;
+    private Timestamp outTime;
 }
