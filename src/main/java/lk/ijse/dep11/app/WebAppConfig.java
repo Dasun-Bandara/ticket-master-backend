@@ -1,5 +1,6 @@
 package lk.ijse.dep11.app;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -25,4 +26,7 @@ public class WebAppConfig {
     public MethodValidationPostProcessor methodValidationPostProcessor(){
         return new MethodValidationPostProcessor();
     }
+
+    @Bean
+    public ModelMapper modelMapper(){ return new ModelMapper(); }
 }

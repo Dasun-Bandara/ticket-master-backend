@@ -28,4 +28,12 @@ public class Vehicle implements Serializable {
     private String status;
     @Column(name = "in_time", nullable = false)
     private Timestamp inTime;
+
+    public Vehicle(String registrationNumber, String contact, String category, String status, Timestamp inTime) {
+        this.registrationNumber = registrationNumber;
+        this.contact = contact;
+        this.category = category;
+        this.status = status;
+        this.inTime = inTime;
+    }
 }
