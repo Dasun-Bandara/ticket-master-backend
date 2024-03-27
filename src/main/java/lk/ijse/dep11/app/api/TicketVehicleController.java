@@ -2,6 +2,7 @@ package lk.ijse.dep11.app.api;
 
 
 import lk.ijse.dep11.app.entity.Charge;
+import lk.ijse.dep11.app.entity.CheckOut;
 import lk.ijse.dep11.app.entity.Vehicle;
 import lk.ijse.dep11.app.to.VehicleTO;
 import org.modelmapper.ModelMapper;
@@ -15,6 +16,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 import javax.validation.constraints.Pattern;
@@ -49,8 +51,8 @@ public class TicketVehicleController {
     }
 
     @GetMapping(params = "status",produces = "application/json")
-    public List<VehicleTO> getAllVehiclesByStatus(@Pattern(regexp = "^[A-Za-z0-9-]{1,10}$", message = "q only can contains capital letters,numbers and hyphen") String q,
-                                                  @Pattern(regexp = "^(in|out)$", message = "Status should be in or out") String status){
+    public List<VehicleTO> getAllVehiclesByStatus(@Pattern(regexp = "^[A-Za-z0-9-]{1,10}$", message = "Invalid vehicle number") String q,
+                                                  @Pattern(regexp = "^(in|out)$", message = "Invalid status") String status){
         if(q == null) q = "";
         q = "%" + q.toUpperCase() + "%";
         em.getTransaction().begin();
@@ -85,8 +87,8 @@ public class TicketVehicleController {
 
     @GetMapping(path = "/{vehicle_no}",params = "status",produces = "application/json")
     public VehicleTO getVehicleByStatus(@PathVariable("vehicle_no")
-                                            @Pattern(regexp = "^[A-Z0-9-]{1,10}$", message = "q only can contains capital letters,numbers and hyphen") String vehicleNo,
-                                        @Pattern(regexp = "^(in|out)$") String status){
+                                            @Pattern(regexp = "^[A-Za-z0-9-]{1,10}$", message = "Invalid vehicle number") String vehicleNo,
+                                        @Pattern(regexp = "^(in|out)$",message = "Invalid status") String status){
 
         em.getTransaction().begin();
         try{
@@ -115,13 +117,14 @@ public class TicketVehicleController {
         }
     }
 
-    @PostMapping(path = "/in",produces = "application/json",consumes = "application/json")
+    @PostMapping(produces = "application/json",consumes = "application/json")
     @ResponseStatus(HttpStatus.CREATED)
     public VehicleTO addVehicleToPark(@RequestBody VehicleTO vehicleTO){
         em.getTransaction().begin();
         try {
+            if (getParkingNumber(vehicleTO.getRegistrationNumber()) != -1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"The vehicle already in the parking");
             Charge chargeObj = em.find(Charge.class, vehicleTO.getCategory());
-            Vehicle vehicle = new Vehicle(vehicleTO.getRegistrationNumber(), vehicleTO.getContact(), vehicleTO.getCategory(),
+            Vehicle vehicle = new Vehicle(vehicleTO.getRegistrationNumber().toUpperCase(), vehicleTO.getContact(), vehicleTO.getCategory(),
                     "in", Timestamp.valueOf(LocalDateTime.now()));
             em.persist(vehicle);
             vehicleTO = mapper.map(vehicle, VehicleTO.class);
@@ -135,8 +138,36 @@ public class TicketVehicleController {
         }
     }
 
-    @PostMapping(path = "/out",produces = "application/json",consumes = "application/json")
-    public void removeVehicleFromPark(){
-        System.out.println("removeVehicleFromPark()");
+    @GetMapping(path = "/out/{vehicle_no}",produces = "application/json")
+    public VehicleTO removeVehicleFromPark(@PathVariable("vehicle_no") @Pattern(regexp = "^[A-Za-z0-9-]{1,10}$",
+            message = "Invalid vehicle number") String vehicleNo){
+        em.getTransaction().begin();
+        try {
+            int parkingNumber = getParkingNumber(vehicleNo);
+            if (parkingNumber == -1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"There is no vehicle in the parking for relevant registration number");
+            Vehicle vehicle = em.find(Vehicle.class, parkingNumber);
+            vehicle.setStatus("out");
+            Charge charge = em.find(Charge.class, vehicle.getCategory());
+            CheckOut checkOut = new CheckOut(vehicle, Timestamp.valueOf(LocalDateTime.now()), charge.getChargePerHour());
+            em.persist(checkOut);
+            VehicleTO vehicleTO = mapper.map(vehicle, VehicleTO.class);
+            vehicleTO.setChargePerHour(charge.getChargePerHour());
+            vehicleTO.setOutTime(checkOut.getOutTime());
+            em.getTransaction().commit();
+            return vehicleTO;
+        }catch (Throwable t){
+            em.getTransaction().rollback();
+            throw t;
+        }
+    }
+
+    private int getParkingNumber(String vehicleNo){
+        try {
+            Query query = em.createNativeQuery("SELECT parking_no FROM vehicle WHERE status = 'in' AND reg_no = '" + vehicleNo + "'",Tuple.class);
+            Tuple result = (Tuple) query.getSingleResult();
+            return  (int) result.get("parking_no");
+        }catch (Throwable t){
+            return -1;
+        }
     }
 }
