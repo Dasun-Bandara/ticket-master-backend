@@ -1,22 +1,71 @@
 package lk.ijse.dep11.app.api;
 
+import lk.ijse.dep11.app.entity.Charge;
 import lk.ijse.dep11.app.to.ChargeTO;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
+import javax.persistence.Tuple;
+import javax.validation.ConstraintViolationException;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/chargers")
+@CrossOrigin
+@Validated
 public class TicketChargeController {
+
+    @Autowired
+    private EntityManager em;
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public String exceptionHandlerForConstraintViolationException(ConstraintViolationException exp) {
+        ResponseStatusException resExp = new ResponseStatusException(HttpStatus.BAD_REQUEST, exp.getMessage());
+        exp.initCause(resExp);
+        throw resExp;
+    }
 
     @GetMapping
     public List<ChargeTO> getAllChargers(){
-        System.out.println("getAllChargers()");
+        em.getTransaction().begin();
+        List<ChargeTO> chargersList = new ArrayList<>();
+        try {
+            Query query = em.createNativeQuery("SELECT vehicle_category, charge_per_hour FROM charge", Tuple.class);
+            List<Tuple> resultList = query.getResultList();
+            for (Tuple tuple : resultList) {
+                chargersList.add(new ChargeTO((String) tuple.get("vehicle_category"),(BigDecimal) tuple.get("charge_per_hour")));
+            }
+            em.getTransaction().commit();
+            return chargersList;
+        }catch (Throwable t){
+            em.getTransaction().rollback();
+        }
         return null;
     }
 
-    @PutMapping
-    public void updateAllChargers(){
-        System.out.println("updateAllChargers()");
+    @PatchMapping(path = "/{vehicle_category}", params = "charge")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateAllChargers(@PathVariable("vehicle_category") @Pattern(regexp = "^(A|B|C|D|E)$",message = "Invalid vehicle category") String vehicleCategory,
+                                  @PositiveOrZero BigDecimal charge){
+        em.getTransaction().begin();
+        try{
+            Charge chargeObj = em.find(Charge.class, vehicleCategory);
+            chargeObj.setChargePerHour(charge);
+            em.getTransaction().commit();
+        }catch (Throwable t){
+            em.getTransaction().rollback();
+            throw t;
+        }
     }
 }
