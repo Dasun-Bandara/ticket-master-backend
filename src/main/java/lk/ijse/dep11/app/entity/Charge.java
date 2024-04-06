@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @Table(name = "charge")
 public class Charge implements Serializable {
     @Id
-    @Column(name = "vehicle_category",length = 10)
+    @Column(name = "vehicle_category",length = 15)
     private String vehicleCategory;
     @Column(name = "charge_per_hour",precision = 8, scale = 2, nullable = false)
     private BigDecimal chargePerHour;

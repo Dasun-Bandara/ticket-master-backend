@@ -50,13 +50,13 @@ public class TicketChargeController {
             return chargersList;
         }catch (Throwable t){
             em.getTransaction().rollback();
+            return null;
         }
-        return null;
     }
 
     @PatchMapping(path = "/{vehicle_category}", params = "charge")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateAllChargers(@PathVariable("vehicle_category") @Pattern(regexp = "^(A|B|C|D|E)$",message = "Invalid vehicle category") String vehicleCategory,
+    public void updateAllChargers(@PathVariable("vehicle_category") @Pattern(regexp = "^(MOTOR_BIKE|THREE_WHEEL|CAR|BUS|OTHER)$",message = "Invalid vehicle category") String vehicleCategory,
                                   @PositiveOrZero BigDecimal charge){
         em.getTransaction().begin();
         try{
@@ -66,6 +66,21 @@ public class TicketChargeController {
         }catch (Throwable t){
             em.getTransaction().rollback();
             throw t;
+        }
+    }
+
+    @GetMapping(path = "/{vehicle_category}")
+    public ChargeTO updateAllChargers(@PathVariable("vehicle_category") @Pattern(regexp = "^(MOTOR_BIKE|THREE_WHEEL|CAR|BUS|OTHER)$",message = "Invalid vehicle category") String vehicleCategory){
+        em.getTransaction().begin();
+        try {
+            Query query = em.createNativeQuery("SELECT vehicle_category, charge_per_hour FROM charge WHERE vehicle_category = '" + vehicleCategory + "'", Tuple.class);
+            Tuple result = (Tuple) query.getSingleResult();
+            ChargeTO chargeObj = new ChargeTO((String) result.get("vehicle_category"), (BigDecimal) result.get("charge_per_hour"));
+            em.getTransaction().commit();
+            return chargeObj;
+        }catch (Throwable t){
+            em.getTransaction().rollback();
+            return null;
         }
     }
 }

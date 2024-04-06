@@ -22,7 +22,7 @@ public class Vehicle implements Serializable {
     private String registrationNumber;
     @Column(length = 15, nullable = false)
     private String contact;
-    @Column(length = 10, nullable = false)
+    @Column(length = 15, nullable = false)
     private String category;
     @Column(length = 10, nullable = false)
     private String status;
