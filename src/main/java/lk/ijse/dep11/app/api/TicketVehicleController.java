@@ -23,6 +23,7 @@ import javax.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class TicketVehicleController {
 
     @Autowired
     private ModelMapper mapper;
+
     @ExceptionHandler(ConstraintViolationException.class)
     public String exceptionHandlerForConstraintViolationException(ConstraintViolationException exp) {
         ResponseStatusException resExp = new ResponseStatusException(HttpStatus.BAD_REQUEST, exp.getMessage());
@@ -73,9 +75,11 @@ public class TicketVehicleController {
                 String st = (String) tuple.get("status");
                 BigDecimal chargePerHour = (BigDecimal) tuple.get("charge_per_hour");
                 Timestamp inTime = (Timestamp) tuple.get("in_time");
-                Timestamp outTime = null;
-                if (status.equalsIgnoreCase("out")) outTime = (Timestamp) tuple.get("out_time");
-                vehicleList.add(new VehicleTO(parkingNo,regNo,contact,category,st,chargePerHour,inTime,outTime));
+                String outTime = null;
+                if (status.equalsIgnoreCase("out")){
+                    outTime = convertTimeToString((Timestamp) tuple.get("out_time"));
+                }
+                vehicleList.add(new VehicleTO(parkingNo,regNo,contact,category,st,chargePerHour,convertTimeToString(inTime),outTime));
             }
             em.getTransaction().commit();
             return vehicleList;
@@ -106,9 +110,11 @@ public class TicketVehicleController {
             String st = (String) result.get("status");
             BigDecimal chargePerHour = (BigDecimal) result.get("charge_per_hour");
             Timestamp inTime = (Timestamp) result.get("in_time");
-            Timestamp outTime = null;
-            if (status.equalsIgnoreCase("out")) outTime = (Timestamp) result.get("out_time");
-            VehicleTO vehicleObj = new VehicleTO(parkingNo, regNo, contact, category, st, chargePerHour, inTime, outTime);
+            String outTime = null;
+            if (status.equalsIgnoreCase("out")) {
+                outTime = convertTimeToString((Timestamp) result.get("out_time"));
+            }
+            VehicleTO vehicleObj = new VehicleTO(parkingNo, regNo, contact, category, st, chargePerHour, convertTimeToString(inTime), outTime);
             em.getTransaction().commit();
             return vehicleObj;
         }catch (Throwable t){
@@ -150,10 +156,11 @@ public class TicketVehicleController {
             Charge charge = em.find(Charge.class, vehicle.getCategory());
             CheckOut checkOut = new CheckOut(vehicle, Timestamp.valueOf(LocalDateTime.now()), charge.getChargePerHour());
             em.persist(checkOut);
-            VehicleTO vehicleTO = mapper.map(vehicle, VehicleTO.class);
+            VehicleTO vehicleTO = mapper.map(vehicle, VehicleTO.class);  //Todo - type miss-match can happen
             vehicleTO.setChargePerHour(charge.getChargePerHour());
-            vehicleTO.setOutTime(checkOut.getOutTime());
+            vehicleTO.setOutTime(convertTimeToString(checkOut.getOutTime()));
             em.getTransaction().commit();
+            System.out.println(vehicleTO);
             return vehicleTO;
         }catch (Throwable t){
             em.getTransaction().rollback();
@@ -169,5 +176,11 @@ public class TicketVehicleController {
         }catch (Throwable t){
             return -1;
         }
+    }
+
+    private String convertTimeToString(Timestamp time){
+        LocalDateTime localTime = time.toLocalDateTime();
+        DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm");
+        return localTime.format(pattern);
     }
 }

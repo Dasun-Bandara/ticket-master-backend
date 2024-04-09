@@ -25,14 +25,14 @@ public class VehicleTO implements Serializable {
     @Pattern(regexp = "^0[0-9]{2}-[0-9]{7}$", message = "Invalid contact number")
     private String contact;
     @NotBlank(message = "Category can't be empty")
-    @Pattern(regexp = "^(A|B|C|D|E)$",message = "Invalid category")
+    @Pattern(regexp = "^(BIKE|THREE_WHEEL|CAR|BUS|OTHER)$",message = "Invalid category")
     private String category;
     @Null(message = "Status should be empty")
     private String status;
     @Null(message = "Charge per hour should be empty")
     private BigDecimal chargePerHour;
     @Null(message = "In time should be empty")
-    private Timestamp inTime;
+    private String inTime;
     @Null(message = "Out time should be empty")
-    private Timestamp outTime;
+    private String outTime;
 }
