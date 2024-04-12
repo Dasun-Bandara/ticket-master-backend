@@ -156,7 +156,7 @@ public class TicketVehicleController {
             Charge charge = em.find(Charge.class, vehicle.getCategory());
             CheckOut checkOut = new CheckOut(vehicle, Timestamp.valueOf(LocalDateTime.now()), charge.getChargePerHour());
             em.persist(checkOut);
-            VehicleTO vehicleTO = mapper.map(vehicle, VehicleTO.class);  //Todo - type miss-match can happen
+            VehicleTO vehicleTO = mapper.map(vehicle, VehicleTO.class);
             vehicleTO.setChargePerHour(charge.getChargePerHour());
             vehicleTO.setOutTime(convertTimeToString(checkOut.getOutTime()));
             em.getTransaction().commit();

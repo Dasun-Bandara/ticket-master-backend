@@ -41,7 +41,7 @@ public class TicketChargeController {
         em.getTransaction().begin();
         List<ChargeTO> chargersList = new ArrayList<>();
         try {
-            Query query = em.createNativeQuery("SELECT vehicle_category, charge_per_hour FROM charge", Tuple.class);
+            Query query = em.createNativeQuery("SELECT vehicle_category, charge_per_hour FROM charge ORDER BY charge_per_hour", Tuple.class);
             List<Tuple> resultList = query.getResultList();
             for (Tuple tuple : resultList) {
                 chargersList.add(new ChargeTO((String) tuple.get("vehicle_category"),(BigDecimal) tuple.get("charge_per_hour")));
@@ -53,15 +53,15 @@ public class TicketChargeController {
             return null;
         }
     }
-
-    @PatchMapping(path = "/{vehicle_category}", params = "charge")
+    @PatchMapping(path = "/{vehicle_category}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateAllChargers(@PathVariable("vehicle_category") @Pattern(regexp = "^(MOTOR_BIKE|THREE_WHEEL|CAR|BUS|OTHER)$",message = "Invalid vehicle category") String vehicleCategory,
-                                  @PositiveOrZero BigDecimal charge){
+    public void updateAllChargers(@PathVariable("vehicle_category")
+                                      @Pattern(regexp = "^(MOTOR_BIKE|THREE_WHEEL|CAR|BUS|OTHER)$",message = "Invalid vehicle category") String vehicleCategory,
+                                  @RequestBody ChargeTO charge){
         em.getTransaction().begin();
         try{
             Charge chargeObj = em.find(Charge.class, vehicleCategory);
-            chargeObj.setChargePerHour(charge);
+            chargeObj.setChargePerHour(charge.getChargePerHour());
             em.getTransaction().commit();
         }catch (Throwable t){
             em.getTransaction().rollback();
